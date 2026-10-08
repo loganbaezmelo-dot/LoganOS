@@ -556,7 +556,7 @@ Type 'help' to view available system commands.
       <!-- APP: FILE MANAGER -->
       <div class="app-window" id="win-files">
         <div class="window-topbar">
-          <div class="window-title"><span>📁</span> <span id="vfs-nav-title">/sdcard</span></div>
+          <div class="window-title"><span>📁</span> <span id="vfs-nav-title">/</span></div>
           <button class="btn-close" onclick="WindowManager.close('files')">✕</button>
         </div>
         <div class="window-view" id="filemgr-viewport"></div>
@@ -665,7 +665,7 @@ Type 'help' to view available system commands.
       "/sdcard/Download/changelog.txt": {
         type: "file",
         mode: 0o666,
-        content: "LoganOS Changelog:\n- Added file viewer modal to Files app.\n- Added file/folder deletion buttons.\n- Added live kernel panic triggers for deletion."
+        content: "LoganOS Changelog:\n- Root file browser enabled.\n- Added file viewer modal to Files app.\n- Added file/folder deletion buttons.\n- Live kernel panic watchdog active."
       },
       "/sdcard/notes.txt": {
         type: "file",
@@ -680,7 +680,7 @@ Type 'help' to view available system commands.
     /* --- VFS ENGINE --- */
     class VirtualFileSystem {
       constructor() {
-        this.storageKey = "loganos_vfs_store";
+        this.storageKey = "loganos_vfs_store_v3";
         this.fs = this.loadStorage();
       }
 
@@ -701,6 +701,7 @@ Type 'help' to view available system commands.
       }
 
       normalize(path) {
+        if (!path || path === "/") return "/";
         const parts = path.split("/").filter(Boolean);
         const resolved = [];
         for (const p of parts) {
@@ -1075,9 +1076,9 @@ Type 'help' to view available system commands.
       }
     };
 
-    /* --- FILE EXPLORER UI WITH VIEW & DELETE --- */
+    /* --- FILE EXPLORER UI WITH ROOT ACCESS & VIEW/DELETE --- */
     const FileManagerUI = {
-      navPath: "/sdcard",
+      navPath: "/",
 
       openViewer(path, content) {
         document.getElementById("viewer-filename").innerText = path;
@@ -1091,7 +1092,7 @@ Type 'help' to view available system commands.
 
       deleteItem(path, e) {
         e.stopPropagation();
-        if (confirm(`Delete ${path}?`)) {
+        if (confirm(`Delete ${path}? This might crash the OS.`)) {
           VFS.deleteNode(path);
           this.render();
           LoganKernel.verifyIntegrity();
@@ -1100,6 +1101,7 @@ Type 'help' to view available system commands.
 
       render() {
         const container = document.getElementById("filemgr-viewport");
+        this.navPath = VFS.normalize(this.navPath);
         document.getElementById("vfs-nav-title").innerText = this.navPath;
         container.innerHTML = "";
 
@@ -1110,7 +1112,7 @@ Type 'help' to view available system commands.
           upRow.onclick = () => {
             const parts = this.navPath.split("/").filter(Boolean);
             parts.pop();
-            this.navPath = "/" + parts.join("/");
+            this.navPath = parts.length === 0 ? "/" : "/" + parts.join("/");
             this.render();
           };
           container.appendChild(upRow);
@@ -1118,7 +1120,7 @@ Type 'help' to view available system commands.
 
         const entries = VFS.listDir(this.navPath);
         if (!entries || entries.length === 0) {
-          container.innerHTML += `<p style="padding: 16px; color: var(--text-muted); font-size: 13px;">Directory is empty.</p>`;
+          container.innerHTML += `<p style="padding: 16px; color: var(--text-muted); font-size: 13px;">Directory is empty or unmounted.</p>`;
           return;
         }
 
@@ -1133,7 +1135,7 @@ Type 'help' to view available system commands.
               <span>${item.name}</span>
             </div>
             <div class="file-actions">
-              <span class="file-meta-specs">${isDir ? "DIR" : (item.content.length + " B")}</span>
+              <span class="file-meta-specs">${isDir ? "DIR" : (item.content ? item.content.length : 0) + " B"}</span>
               <button class="btn-trash" onclick="FileManagerUI.deleteItem('${item.fullPath}', event)">🗑️</button>
             </div>
           `;
@@ -1143,7 +1145,7 @@ Type 'help' to view available system commands.
               this.navPath = item.fullPath;
               this.render();
             } else {
-              this.openViewer(item.fullPath, item.content);
+              this.openViewer(item.fullPath, item.content || "");
             }
           };
 
