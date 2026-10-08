@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>LoganOS - Virtual Web Architecture</title>
+  <style>
+    :root {
+      --bg: #090c10;
+      --surface: #161b22;
+      --surface-light: #21262d;
+      --accent: #58a6ff;
+      --accent-danger: #f85149;
+      --accent-success: #3fb950;
+      --accent-warn: #d29922;
+      --text: #f0f6fc;
+      --text-muted: #8b949e;
+      --border: #30363d;
+      --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-code: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: #010409;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: var(--font-ui);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    /* Device Enclosure */
+    .device-shell {
+      width: 410px;
+      height: 840px;
+      background: #000;
+      border-radius: 46px;
+      border: 8px solid #2d333b;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05), 0 30px 80px rgba(0, 0, 0, 0.95);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Hardware Punch Hole */
+    .camera-hole {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 14px;
+      background: #0d1117;
+      border-radius: 50%;
+      z-index: 1000;
+      border: 2px solid #161b22;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      height: 38px;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      z-index: 900;
+      background: transparent;
+    }
+
+    .status-left, .status-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Main Desktop Environment */
+    .viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background-size: cover;
+      background-position: center;
+      transition: background 0.3s ease;
+    }
+
+    .desktop-area {
+      flex: 1;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .widget-clock {
+      padding: 10px;
+      cursor: default;
+    }
+
+    .widget-clock .time {
+      font-size: 54px;
+      font-weight: 200;
+      letter-spacing: -1.5px;
+      line-height: 1;
+    }
+
+    .widget-clock .date {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 500;
+      margin-top: 6px;
+      text-transform: capitalize;
+    }
+
+    /* App Grids */
+    .app-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      row-gap: 20px;
+      column-gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .app-icon {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .app-icon:active .icon-tile {
+      transform: scale(0.9);
+    }
+
+    .icon-tile {
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .app-label {
+      font-size: 11px;
+      color: var(--text);
+      font-weight: 500;
+      text-align: center;
+      max-width: 65px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* App Window Architecture */
+    .app-window {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      z-index: 500;
+      transform: translateY(105%);
+      transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+
+    .app-window.active {
+      transform: translateY(0);
+    }
+
+    .window-topbar {
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      background: var(--surface);
+    }
+
+    .window-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-close {
+      background: var(--surface-light);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-close:active {
+      background: var(--accent-danger);
+      color: white;
+    }
+
+    .window-view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      position: relative;
+    }
+
+    /* Terminal App Specifics */
+    .term-container {
+      background: #040608;
+      font-family: var(--font-code);
+      color: #38bdf8;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      font-size: 12px;
+      line-height: 1.45;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .term-stdout {
+      flex: 1;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      padding-bottom: 10px;
+    }
+
+    .term-stdin-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+    }
+
+    .term-prompt {
+      color: var(--accent-success);
+      font-weight: bold;
+    }
+
+    .term-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--font-code);
+      color: #fff;
+      font-size: 12px;
+    }
+
+    /* Interactive Nano in Terminal */
+    .nano-editor {
+      position: absolute;
+      inset: 0;
+      background: #0d1117;
+      display: none;
+      flex-direction: column;
+      z-index: 600;
+    }
+
+    .nano-header {
+      background: var(--surface-light);
+      padding: 4px 8px;
+      font-size: 11px;
+      font-family: var(--font-code);
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .nano-body {
+      flex: 1;
+      width: 100%;
+      background: transparent;
+      color: #fff;
+      font-family: var(--font-code);
+      border: none;
+      outline: none;
+      padding: 8px;
+      resize: none;
+      font-size: 12px;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    /* File Explorer List Styles */
+    .file-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border-radius: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      cursor: pointer;
+    }
+
+    .file-row:hover {
+      background: var(--surface);
+    }
+
+    .file-meta-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .file-meta-specs {
+      font-size: 10px;
+      color: var(--text-muted);
+      font-family: var(--font-code);
+    }
+
+    /* System Process Table */
+    .proc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      font-family: var(--font-code);
+      text-align: left;
+    }
+
+    .proc-table th, .proc-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .proc-table th {
+      color: var(--accent);
+    }
+
+    /* Gesture Navigation Bar */
+    .nav-gestures {
+      height: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+      z-index: 900;
+    }
+
+    .pill-home {
+      width: 130px;
+      height: 5px;
+      background: #484f58;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .pill-home:hover {
+      background: #8b949e;
+    }
+
+    /* Kernel Crash / Panic Interface */
+    .kernel-dump-view {
+      position: absolute;
+      inset: 0;
+      background: #030000;
+      color: #ff4444;
+      font-family: var(--font-code);
+      font-size: 10.5px;
+      line-height: 1.35;
+      padding: 24px 16px;
+      z-index: 99999;
+      display: none;
+      flex-direction: column;
+      user-select: text;
+      -webkit-user-select: text;
+      overflow-y: auto;
+    }
+
+    .dump-header {
+      font-size: 13px;
+      font-weight: bold;
+      color: #fff;
+      background: #7a1212;
+      padding: 4px;
+      margin-bottom: 10px;
+    }
+
+    .panic-btn-group {
+      margin-top: 14px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .panic-btn {
+      background: #222;
+      color: #fff;
+      border: 1px solid #444;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--font-code);
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="device-shell">
+    <div class="camera-hole"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-left">
+        <span id="stat-clock">00:00</span>
+      </div>
+      <div class="status-right">
+        <span>LTE</span>
+        <span>99%</span>
+      </div>
+    </div>
+
+    <!-- Kernel Panic Display Layer -->
+    <div class="kernel-dump-view" id="kernel-crash-view">
+      <div class="dump-header">*** LOGAN-OS CRITICAL KERNEL PANIC ***</div>
+      <p id="panic-trace-summary">CRASH_REASON: KERNEL_INTEGRITY_VIOLATION</p>
+      <p style="color: #bbb; margin-top: 6px;">[FAULT_TIME: <span id="crash-timestamp"></span>]</p>
+      <hr style="border: 0; border-top: 1px dashed #551111; margin: 8px 0;" />
+      <div id="panic-registers">
+        CPU: 0 PID: 1 Comm: init Not tainted 6.1.0-logan-vfs #1<br/>
+        Hardware: Virtual LoganOS Platform (VFS-Standard)<br/>
+        RIP: 0010:vfs_mount_root+0x7b/0x120<br/>
+        RSP: 0018:ffffc90000013d40 EFLAGS: 00010246<br/>
+        RAX: 0000000000000000 RBX: ffff8881001a4000 RCX: 0000000000000000<br/>
+        CR2: 0000000000000000 CR3: 0000000101420000 CR4: 0000000000350ef0
+      </div>
+      <div id="panic-custom-msg" style="margin-top: 10px; color: #ffaaaa;"></div>
+      <div class="panic-btn-group">
+        <button class="panic-btn" onclick="LoganKernel.reboot(false)">Warm Reboot</button>
+        <button class="panic-btn" onclick="LoganKernel.reboot(true)">Factory Restore</button>
+      </div>
+    </div>
+
+    <!-- Main Active Workspace -->
+    <div class="viewport" id="viewport">
+      <div class="desktop-area">
+        <div class="widget-clock">
+          <div class="time" id="screen-time">12:00</div>
+          <div class="date" id="screen-date">Monday, Oct 12</div>
+        </div>
+
+        <!-- Desktop App Launcher Grid -->
+        <div class="app-grid" id="launcher-grid">
+          <!-- Dynamically populated from VFS /system/packages.xml -->
+        </div>
+      </div>
+
+      <!-- APP: TERMINAL -->
+      <div class="app-window" id="win-terminal">
+        <div class="window-topbar">
+          <div class="window-title"><span>💻</span> Terminal [LoganSh]</div>
+          <button class="btn-close" onclick="WindowManager.close('terminal')">✕</button>
+        </div>
+        <div class="window-view term-container">
+          <div class="term-stdout" id="term-out">LoganOS Sh (VFS Interactive Subsystem)
+Type 'help' to view available system commands.
+</div>
+          <div class="term-stdin-line">
+            <span class="term-prompt" id="term-pwd-prompt">/ $</span>
+            <input type="text" class="term-input" id="term-in" spellcheck="false" autocomplete="off" />
+          </div>
+
+          <!-- In-Terminal Nano Text Editor -->
+          <div class="nano-editor" id="nano-screen">
+            <div class="nano-header">
+              <span id="nano-filename">File: /sdcard/notes.txt</span>
+              <span>Ctrl+S / Click Save</span>
+            </div>
+            <textarea class="nano-body" id="nano-text-area" spellcheck="false"></textarea>
+            <div class="nano-header">
+              <button class="panic-btn" onclick="TermSession.nanoSave()">[ Save File ]</button>
+              <button class="panic-btn" onclick="TermSession.nanoExit()">[ Exit Nano ]</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APP: FILE MANAGER -->
+      <div class="app-window" id="win-files">
+        <div class="window-topbar">
+          <div class="window-title"><span>📁</span> <span id="vfs-nav-title">/sdcard</span></div>
+          <button class="btn-close" onclick="WindowManager.close('files')">✕</button>
+        </div>
+        <div class="window-view" id="filemgr-viewport"></div>
+      </div>
+
+      <!-- APP: SYSTEM SETTINGS -->
+      <div class="app-window" id="win-settings">
+        <div class="window-topbar">
+          <div class="window-title"><span>⚙️</span> OS Settings</div>
+          <button class="btn-close" onclick="WindowManager.close('settings')">✕</button>
+        </div>
+        <div class="window-view" style="font-size: 13px; line-height: 1.6;">
+          <h4 style="margin-bottom: 8px; color: var(--accent);">Device Specifications</h4>
+          <p>Kernel: <span id="prop-kernel" style="font-family: var(--font-code);">Loading...</span></p>
+          <p>Build Tag: <span id="prop-build" style="font-family: var(--font-code);">Loading...</span></p>
+          <p>VFS Health: <span style="color: var(--accent-success);">Mounted (rw)</span></p>
+          <hr style="border: 0; border-top: 1px solid var(--border); margin: 12px 0;" />
+          <h4 style="margin-bottom: 8px; color: var(--accent-danger);">Dangerous Zone</h4>
+          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+            Simulate a catastrophic hardware fault or manually wipe critical partitions directly.
+          </p>
+          <button class="panic-btn" style="background: var(--accent-danger); border: none;" onclick="VFS.deleteNode('/system'); LoganKernel.verifyIntegrity();">
+            Delete /system Partition
+          </button>
+        </div>
+      </div>
+
+      <!-- APP: PROCESS MONITOR -->
+      <div class="app-window" id="win-tasks">
+        <div class="window-topbar">
+          <div class="window-title"><span>📊</span> Task Manager</div>
+          <button class="btn-close" onclick="WindowManager.close('tasks')">✕</button>
+        </div>
+        <div class="window-view">
+          <table class="proc-table">
+            <thead>
+              <tr>
+                <th>PID</th>
+                <th>PROCESS</th>
+                <th>MEM</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody id="proc-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gesture Bar -->
+    <div class="nav-gestures">
+      <div class="pill-home" onclick="WindowManager.minimizeAll()"></div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * LOGAN-OS GOLD MASTER SPECIFICATION (VFS Architecture)
+     * Core subsystems:
+     * - VFS (Virtual File System) with Inode Emulation
+     * - Process Manager (PID table & lifecycle)
+     * - LoganKernel (Integrity verification loop & panic execution)
+     * - UI / WindowManager (Desktop shell, gestures, package loading)
+     */
+
+    const FACTORY_IMAGE = {
+      "/": { type: "dir", mode: 0o755 },
+      "/init.rc": {
+        type: "file",
+        mode: 0o644,
+        content: "loglevel 3\nexport PATH /system/bin\nmount_all /system/etc/fstab\nstart surfaceflinger\nstart logansh"
+      },
+      "/system": { type: "dir", mode: 0o755 },
+      "/system/bin": { type: "dir", mode: 0o755 },
+      "/system/bin/init": { type: "file", mode: 0o755, content: "[ELF 64-bit LSB executable, x86-64, Logan Init Core]" },
+      "/system/bin/sh": { type: "file", mode: 0o755, content: "[ELF 64-bit LSB executable, Logan Shell Binary]" },
+      "/system/build.prop": {
+        type: "file",
+        mode: 0o644,
+        content: "ro.product.brand=Logan\nro.product.model=LoganOS_Pro\nro.build.version.release=1.0.4-LTS\nro.sys.storage.encryption=none\nro.kernel.integrity_watchdog=1"
+      },
+      "/system/packages.xml": {
+        type: "file",
+        mode: 0o644,
+        content: JSON.stringify([
+          { id: "files", name: "Files", icon: "📁" },
+          { id: "terminal", name: "Terminal", icon: "💻" },
+          { id: "settings", name: "Settings", icon: "⚙️" },
+          { id: "tasks", name: "Tasks", icon: "📊" }
+        ], null, 2)
+      },
+      "/system/etc": { type: "dir", mode: 0o755 },
+      "/system/etc/theme.json": {
+        type: "file",
+        mode: 0o644,
+        content: JSON.stringify({
+          background: "radial-gradient(circle at 50% 15%, #1f2937 0%, #0b0f17 100%)",
+          accentColor: "#58a6ff"
+        })
+      },
+      "/system/etc/fstab": {
+        type: "file",
+        mode: 0o644,
+        content: "/dev/block/boot / ext4 ro\n/dev/block/system /system ext4 rw\n/dev/block/userdata /sdcard ext4 rw"
+      },
+      "/sdcard": { type: "dir", mode: 0o777 },
+      "/sdcard/DCIM": { type: "dir", mode: 0o777 },
+      "/sdcard/DCIM/camera_test.raw": { type: "file", mode: 0o666, content: "0x89 0x50 0x4E 0x47 [RAW_CAMERA_BUFFER]" },
+      "/sdcard/Download": { type: "dir", mode: 0o777 },
+      "/sdcard/Download/changelog.txt": {
+        type: "file",
+        mode: 0o666,
+        content: "LoganOS v1.0.4 Changelog:\n- Fixed race condition in task scheduler.\n- Added panic trace log dumps.\n- Initializing VFS mount hooks."
+      },
+      "/sdcard/notes.txt": {
+        type: "file",
+        mode: 0o666,
+        content: "Remember:\nDo NOT execute 'rm -rf /system' in the terminal.\nDoing so causes instant kernel failure."
+      },
+      "/dev": { type: "dir", mode: 0o755 },
+      "/dev/null": { type: "file", mode: 0o666, content: "" },
+      "/dev/urandom": { type: "file", mode: 0o444, content: "[PSEUDORANDOM_BYTE_STREAM]" }
+    };
+
+    /* --- VIRTUAL FILE SYSTEM ENGINE --- */
+    class VirtualFileSystem {
+      constructor() {
+        this.storageKey = "loganos_vfs_store";
+        this.fs = this.loadStorage();
+      }
+
+      loadStorage() {
+        const local = localStorage.getItem(this.storageKey);
+        if (local) {
+          try {
+            return JSON.parse(local);
+          } catch (e) {
+            console.error("VFS payload corrupt. Loading clean factory layout.");
+          }
+        }
+        return JSON.parse(JSON.stringify(FACTORY_IMAGE));
+      }
+
+      saveStorage() {
+        localStorage.setItem(this.storageKey, JSON.stringify(this.fs));
+      }
+
+      normalize(path) {
+        const parts = path.split("/").filter(Boolean);
+        const resolved = [];
+        for (const p of parts) {
+          if (p === ".") continue;
+          if (p === "..") {
+            if (resolved.length > 0) resolved.pop();
+          } else {
+            resolved.push(p);
+          }
+        }
+        return "/" + resolved.join("/");
+      }
+
+      getNode(path) {
+        const target = this.normalize(path);
+        if (target === "/" && this.fs["/"]) return this.fs["/"];
+        return this.fs[target] || null;
+      }
+
+      exists(path) {
+        return !!this.getNode(path);
+      }
+
+      listDir(path) {
+        const normalized = this.normalize(path);
+        const dirNode = this.getNode(normalized);
+        if (!dirNode || dirNode.type !== "dir") return null;
+
+        const results = [];
+        const prefix = normalized === "/" ? "/" : normalized + "/";
+
+        for (const key in this.fs) {
+          if (key === normalized || key === "/") continue;
+          if (key.startsWith(prefix)) {
+            const remainder = key.slice(prefix.length);
+            if (!remainder.includes("/")) {
+              results.push({
+                name: remainder,
+                fullPath: key,
+                ...this.fs[key]
+              });
+            }
+          }
+        }
+        return results;
+      }
+
+      writeFile(path, content) {
+        const normalized = this.normalize(path);
+        const parentPath = normalized.substring(0, normalized.lastIndexOf("/")) || "/";
+
+        if (!this.exists(parentPath)) return { error: "Parent directory does not exist." };
+
+        this.fs[normalized] = {
+          type: "file",
+          mode: 0o644,
+          content: content
+        };
+        this.saveStorage();
+        return { success: true };
+      }
+
+      mkdir(path) {
+        const normalized = this.normalize(path);
+        if (this.exists(normalized)) return { error: "Path already exists." };
+
+        this.fs[normalized] = {
+          type: "dir",
+          mode: 0o755
+        };
+        this.saveStorage();
+        return { success: true };
+      }
+
+      deleteNode(path) {
+        const normalized = this.normalize(path);
+        if (normalized === "/") {
+          this.fs = {};
+          this.saveStorage();
+          return { success: true };
+        }
+
+        let deletedCount = 0;
+        for (const k in this.fs) {
+          if (k === normalized || k.startsWith(normalized + "/")) {
+            delete this.fs[k];
+            deletedCount++;
+          }
+        }
+
+        this.saveStorage();
+        return deletedCount > 0 ? { success: true } : { error: "Path not found." };
+      }
+    }
+
+    const VFS = new VirtualFileSystem();
+
+    /* --- PROCESS MANAGEMENT SUBSYSTEM --- */
+    class ProcessManager {
+      constructor() {
+        this.table = [
+          { pid: 1, name: "init", mem: "4.2 MB", user: "root" },
+          { pid: 2, name: "kthreadd", mem: "0.0 MB", user: "root" },
+          { pid: 74, name: "surfaceflinger", mem: "32.1 MB", user: "system" },
+          { pid: 112, name: "logansh", mem: "6.8 MB", user: "shell" }
+        ];
+      }
+
+      getProcesses() {
+        return this.table;
+      }
+
+      kill(pid) {
+        if (pid === 1) {
+          LoganKernel.panic("FATAL: Attempted to kill init process (PID 1). System execution halted.");
+          return;
+        }
+        this.table = this.table.filter(p => p.pid !== pid);
+      }
+    }
+
+    const Proc = new ProcessManager();
+
+    /* --- KERNEL INTEGRITY & PANIC HANDLER --- */
+    const LoganKernel = {
+      panicMode: false,
+
+      verifyIntegrity() {
+        if (this.panicMode) return;
+
+        // Check 1: Root directory existence
+        if (!VFS.exists("/")) {
+          this.panic("CRITICAL_VFS_FAULT: Root node '/' has vanished.");
+          return;
+        }
+        // Check 2: Core Init Binary
+        if (!VFS.exists("/system/bin/init")) {
+          this.panic("INIT_CRASH: /system/bin/init binary missing or corrupted. Runlevel 0 unrecoverable.");
+          return;
+        }
+        // Check 3: System build definition
+        if (!VFS.exists("/system/build.prop")) {
+          this.panic("DEVICE_PROFILE_FAULT: /system/build.prop unreadable. Hardware identifiers undefined.");
+          return;
+        }
+        // Check 4: Base packages
+        if (!VFS.exists("/system/packages.xml")) {
+          this.panic("PACKAGE_MGR_DEATH: /system/packages.xml missing. Shell launcher crashed.");
+          return;
+        }
+      },
+
+      panic(reason) {
+        this.panicMode = true;
+        const screen = document.getElementById("kernel-crash-view");
+        document.getElementById("panic-trace-summary").innerText = "FAULT_REASON: " + reason;
+        document.getElementById("panic-custom-msg").innerText =
+          "System Stack Unwind Complete.\nCall Trace:\n [<ffffffff81045a2c>] panic+0x10a/0x284\n [<ffffffff81211e40>] do_sys_openat2+0x90/0x150\n [<ffffffff810023a1>] do_syscall_64+0x61/0x90";
+        document.getElementById("crash-timestamp").innerText = new Date().toISOString();
+        screen.style.display = "flex";
+      },
+
+      reboot(factoryReset = false) {
+        if (factoryReset) {
+          localStorage.removeItem(VFS.storageKey);
+        }
+        location.reload();
+      }
+    };
+
+    /* --- SHELL COMMAND DISPATCHER --- */
+    const TermSession = {
+      cwd: "/sdcard",
+      activeNanoFile: null,
+
+      init() {
+        const input = document.getElementById("term-in");
+        this.updatePrompt();
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            const raw = input.value.trim();
+            input.value = "";
+            this.handleInput(raw);
+          }
+        });
+      },
+
+      updatePrompt() {
+        document.getElementById("term-pwd-prompt").innerText = `${this.cwd} #`;
+      },
+
+      print(text) {
+        const out = document.getElementById("term-out");
+        out.innerText += "\n" + text;
+        out.scrollTop = out.scrollHeight;
+      },
+
+      handleInput(cmdString) {
+        if (!cmdString) return;
+        this.print(`${this.cwd} # ${cmdString}`);
+
+        const tokens = cmdString.split(" ").filter(Boolean);
+        const cmd = tokens[0];
+        const args = tokens.slice(1);
+
+        switch (cmd) {
+          case "help":
+            this.print(
+              "Available Shell Built-ins:\n" +
+              "  ls [path]         List directory contents\n" +
+              "  cd <path>         Change current working directory\n" +
+              "  pwd               Print working directory\n" +
+              "  cat <file>        Read file contents to terminal\n" +
+              "  nano <file>       Open interactive text file editor\n" +
+              "  touch <file>      Create a new blank file\n" +
+              "  mkdir <dir>       Create a directory\n" +
+              "  rm [-rf] <path>   Delete file or directory tree\n" +
+              "  ps                List current process table\n" +
+              "  kill <pid>        Terminate process by ID\n" +
+              "  df                Show virtual file system usage\n" +
+              "  reboot            Soft reboot device\n" +
+              "  clear             Clear stdout console buffer"
+            );
+            break;
+
+          case "clear":
+            document.getElementById("term-out").innerText = "";
+            break;
+
+          case "pwd":
+            this.print(this.cwd);
+            break;
+
+          case "cd": {
+            const target = args[0] || "/";
+            const candidate = target.startsWith("/") ? target : this.cwd + "/" + target;
+            const normalized = VFS.normalize(candidate);
+            const node = VFS.getNode(normalized);
+            if (!node || node.type !== "dir") {
+              this.print(`cd: no such file or directory: ${target}`);
+            } else {
+              this.cwd = normalized;
+              this.updatePrompt();
+            }
+            break;
+          }
+
+          case "ls": {
+            const target = args[0] ? (args[0].startsWith("/") ? args[0] : this.cwd + "/" + args[0]) : this.cwd;
+            const items = VFS.listDir(target);
+            if (!items) {
+              this.print(`ls: cannot access '${target}': No such directory`);
+            } else {
+              const formatted = items.map(i => (i.type === "dir" ? `${i.name}/` : i.name)).join("   ");
+              this.print(formatted || "(empty directory)");
+            }
+            break;
+          }
+
+          case "cat": {
+            if (!args[0]) {
+              this.print("cat: missing operand");
+              break;
+            }
+            const path = args[0].startsWith("/") ? args[0] : this.cwd + "/" + args[0];
+            const node = VFS.getNode(path);
+            if (!node) {
+              this.print(`cat: ${args[0]}: No such file or directory`);
+            } else if (node.type === "dir") {
+              this.print(`cat: ${args[0]}: Is a directory`);
+            } else {
+              this.print(node.content);
+            }
+            break;
+          }
+
+          case "touch": {
+            if (!args[0]) {
+              this.print("touch: missing file operand");
+              break;
+            }
+            const path = args[0].startsWith("/") ? args[0] : this.cwd + "/" + args[0];
+            VFS.writeFile(path, "");
+            this.print(`Created empty file: ${path}`);
+            break;
+          }
+
+          case "mkdir": {
+            if (!args[0]) {
+              this.print("mkdir: missing operand");
+              break;
+            }
+            const path = args[0].startsWith("/") ? args[0] : this.cwd + "/" + args[0];
+            const res = VFS.mkdir(path);
+            if (res.error) this.print(`mkdir: ${res.error}`);
+            break;
+          }
+
+          case "rm": {
+            let recursive = false;
+            let targetArg = args[0];
+
+            if (tokens.includes("-rf") || tokens.includes("-r")) {
+              recursive = true;
+              targetArg = args.find(a => !a.startsWith("-"));
+            }
+
+            if (!targetArg) {
+              this.print("rm: missing operand");
+              break;
+            }
+
+            const path = targetArg.startsWith("/") ? targetArg : this.cwd + "/" + targetArg;
+            const normalized = VFS.normalize(path);
+            const node = VFS.getNode(normalized);
+
+            if (!node) {
+              this.print(`rm: cannot remove '${targetArg}': No such file or directory`);
+              break;
+            }
+
+            if (node.type === "dir" && !recursive) {
+              this.print(`rm: cannot remove '${targetArg}': Is a directory (use -rf)`);
+              break;
+            }
+
+            VFS.deleteNode(normalized);
+            this.print(`Removed: ${normalized}`);
+            LoganKernel.verifyIntegrity();
+            break;
+          }
+
+          case "nano": {
+            if (!args[0]) {
+              this.print("nano: file argument required");
+              break;
+            }
+            const path = args[0].startsWith("/") ? args[0] : this.cwd + "/" + args[0];
+            this.openNano(path);
+            break;
+          }
+
+          case "ps": {
+            const list = Proc.getProcesses();
+            let table = "PID\tUSER\tMEM\tNAME\n";
+            list.forEach(p => {
+              table += `${p.pid}\t${p.user}\t${p.mem}\t${p.name}\n`;
+            });
+            this.print(table.trim());
+            break;
+          }
+
+          case "kill": {
+            const pid = parseInt(args[0], 10);
+            if (isNaN(pid)) {
+              this.print("kill: invalid PID");
+              break;
+            }
+            Proc.kill(pid);
+            this.print(`Sent SIGKILL to PID ${pid}`);
+            break;
+          }
+
+          case "df": {
+            const keys = Object.keys(VFS.fs);
+            const approxBytes = JSON.stringify(VFS.fs).length;
+            this.print(
+              "Filesystem      Size    Used   Avail Use% Mounted on\n" +
+              `/dev/vfs-root   64M     ${(approxBytes / 1024).toFixed(1)}K    63M   1% /`
+            );
+            break;
+          }
+
+          case "reboot":
+            LoganKernel.reboot(false);
+            break;
+
+          default:
+            this.print(`sh: ${cmd}: command not found`);
+        }
+      },
+
+      openNano(path) {
+        const normalized = VFS.normalize(path);
+        const node = VFS.getNode(normalized);
+        this.activeNanoFile = normalized;
+
+        document.getElementById("nano-filename").innerText = `File: ${normalized}`;
+        document.getElementById("nano-text-area").value = node && node.type === "file" ? node.content : "";
+        document.getElementById("nano-screen").style.display = "flex";
+      },
+
+      nanoSave() {
+        if (!this.activeNanoFile) return;
+        const val = document.getElementById("nano-text-area").value;
+        VFS.writeFile(this.activeNanoFile, val);
+        this.print(`[nano] Wrote ${val.length} bytes to ${this.activeNanoFile}`);
+        LoganKernel.verifyIntegrity();
+        this.nanoExit();
+      },
+
+      nanoExit() {
+        document.getElementById("nano-screen").style.display = "none";
+        this.activeNanoFile = null;
+      }
+    };
+
+    /* --- WINDOW MANAGER & DESKTOP SHELL --- */
+    const WindowManager = {
+      open(id) {
+        document.getElementById(`win-${id}`).classList.add("active");
+        if (id === "files") FileManagerUI.render();
+        if (id === "tasks") TaskManagerUI.render();
+        if (id === "settings") SettingsUI.render();
+      },
+
+      close(id) {
+        document.getElementById(`win-${id}`).classList.remove("active");
+      },
+
+      minimizeAll() {
+        document.querySelectorAll(".app-window").forEach(w => w.classList.remove("active"));
+      }
+    };
+
+    /* --- FILE EXPLORER INTERFACE --- */
+    const FileManagerUI = {
+      navPath: "/sdcard",
+
+      render() {
+        const container = document.getElementById("filemgr-viewport");
+        document.getElementById("vfs-nav-title").innerText = this.navPath;
+        container.innerHTML = "";
+
+        // Parent dir navigator
+        if (this.navPath !== "/") {
+          const upRow = document.createElement("div");
+          upRow.className = "file-row";
+          upRow.innerHTML = `
+            <div class="file-meta-name"><span>📁</span> <strong>.. [Go Up]</strong></div>
+          `;
+          upRow.onclick = () => {
+            const parts = this.navPath.split("/").filter(Boolean);
+            parts.pop();
+            this.navPath = "/" + parts.join("/");
+            this.render();
+          };
+          container.appendChild(upRow);
+        }
+
+        const entries = VFS.listDir(this.navPath);
+        if (!entries || entries.length === 0) {
+          container.innerHTML += `<p style="padding: 12px; color: var(--text-muted); font-size: 12px;">Directory is empty.</p>`;
+          return;
+        }
+
+        entries.forEach(item => {
+          const row = document.createElement("div");
+          row.className = "file-row";
+          const isDir = item.type === "dir";
+          row.innerHTML = `
+            <div class="file-meta-name">
+              <span>${isDir ? "📁" : "📄"}</span>
+              <span>${item.name}</span>
+            </div>
+            <div class="file-meta-specs">${isDir ? "DIR" : (item.content.length + " B")}</div>
+          `;
+
+          row.onclick = () => {
+            if (isDir) {
+              this.navPath = item.fullPath;
+              this.render();
+            } else {
+              // Open file in Nano via Terminal directly
+              WindowManager.open("terminal");
+              TermSession.openNano(item.fullPath);
+            }
+          };
+          container.appendChild(row);
+        });
+      }
+    };
+
+    /* --- TASK MANAGER UI --- */
+    const TaskManagerUI = {
+      render() {
+        const tbody = document.getElementById("proc-table-body");
+        tbody.innerHTML = "";
+        Proc.getProcesses().forEach(p => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${p.pid}</td>
+            <td>${p.name}</td>
+            <td>${p.mem}</td>
+            <td><button class="panic-btn" style="padding: 2px 6px;" onclick="Proc.kill(${p.pid}); TaskManagerUI.render();">Kill</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    };
+
+    /* --- SETTINGS APP UI --- */
+    const SettingsUI = {
+      render() {
+        const buildProp = VFS.getNode("/system/build.prop");
+        if (buildProp && buildProp.content) {
+          const lines = buildProp.content.split("\n");
+          lines.forEach(l => {
+            if (l.startsWith("ro.build.version.release=")) {
+              document.getElementById("prop-kernel").innerText = l.split("=")[1];
+            }
+            if (l.startsWith("ro.product.model=")) {
+              document.getElementById("prop-build").innerText = l.split("=")[1];
+            }
+          });
+        } else {
+          document.getElementById("prop-kernel").innerText = "UNKNOWN (build.prop damaged)";
+          document.getElementById("prop-build").innerText = "GENERIC_CORRUPT";
+        }
+      }
+    };
+
+    /* --- OS BOOT SEQUENCE & SHELL INITIALIZATION --- */
+    function bootLoganOS() {
+      // 1. Clock loops
+      const updateClocks = () => {
+        const d = new Date();
+        const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        document.getElementById("stat-clock").innerText = timeStr;
+        document.getElementById("screen-time").innerText = timeStr;
+        document.getElementById("screen-date").innerText = d.toLocaleDateString([], {
+          weekday: "long",
+          month: "short",
+          day: "numeric"
+        });
+      };
+      setInterval(updateClocks, 1000);
+      updateClocks();
+
+      // 2. Load Visual Appearance from /system/etc/theme.json
+      const themeNode = VFS.getNode("/system/etc/theme.json");
+      if (themeNode && themeNode.content) {
+        try {
+          const theme = JSON.parse(themeNode.content);
+          if (theme.background) document.getElementById("viewport").style.background = theme.background;
+        } catch (e) {
+          console.warn("Theme config corrupt, falling back to default styling.");
+        }
+      }
+
+      // 3. Dynamic App Launcher Generation from /system/packages.xml
+      const launcherGrid = document.getElementById("launcher-grid");
+      launcherGrid.innerHTML = "";
+      const pkgsNode = VFS.getNode("/system/packages.xml");
+      if (pkgsNode && pkgsNode.content) {
+        try {
+          const pkgs = JSON.parse(pkgsNode.content);
+          pkgs.forEach(app => {
+            const tile = document.createElement("div");
+            tile.className = "app-icon";
+            tile.onclick = () => WindowManager.open(app.id);
+            tile.innerHTML = `
+              <div class="icon-tile">${app.icon}</div>
+              <span class="app-label">${app.name}</span>
+            `;
+            launcherGrid.appendChild(tile);
+          });
+        } catch (e) {
+          LoganKernel.panic("SYSTEM_CORRUPTION: Unable to parse /system/packages.xml manifest.");
+          return;
+        }
+      } else {
+        LoganKernel.panic("FATAL: /system/packages.xml is missing. UI launcher dead.");
+        return;
+      }
+
+      // 4. Init terminal commands
+      TermSession.init();
+
+      // 5. Setup continuous Kernel Watchdog Timer
+      setInterval(() => {
+        LoganKernel.verifyIntegrity();
+      }, 1500);
+    }
+
+    // Power On Device
+    window.addEventListener("DOMContentLoaded", bootLoganOS);
+  </script>
+</body>
+</html>
