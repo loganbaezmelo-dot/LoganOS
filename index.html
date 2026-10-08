@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>LoganOS - Mobile Environment</title>
+  <title>LoganOS - Degradation & Glitch Engine</title>
   <style>
     :root {
       --bg: #090c10;
@@ -46,6 +46,32 @@
       position: relative;
       overflow: hidden;
       background: #000;
+      transition: filter 0.3s ease;
+    }
+
+    /* --- REALTIME GLITCH SHADERS & CORRUPTIONS --- */
+    /* Triggered when /system/etc/theme.json is deleted */
+    .glitch-gpu {
+      animation: gpuArtifacts 0.18s infinite steps(2);
+      filter: invert(0.9) hue-rotate(190deg) contrast(180%);
+    }
+
+    @keyframes gpuArtifacts {
+      0% { transform: translate(1px, -1px) skewX(1deg); }
+      50% { transform: translate(-2px, 1px) skewX(-2deg); }
+      100% { transform: translate(1px, 2px) skewX(0deg); }
+    }
+
+    /* Triggered when /system/etc/fstab is deleted (storage tearing) */
+    .glitch-fstab {
+      animation: fstabShake 0.4s infinite alternate ease-in-out;
+    }
+
+    @keyframes fstabShake {
+      0% { clip-path: inset(0 0 0 0); transform: translateY(0); }
+      30% { clip-path: inset(10% 0 15% 0); transform: translateY(2px) scale(1.01); }
+      70% { clip-path: inset(25% 0 5% 0); transform: translateY(-2px); }
+      100% { clip-path: inset(0 0 0 0); transform: translateY(0); }
     }
 
     /* Native-style Status Bar */
@@ -480,15 +506,15 @@
 </head>
 <body>
 
-  <div class="device-shell">
+  <div class="device-shell" id="hardware-shell">
     <!-- Status Bar -->
     <div class="status-bar">
       <div class="status-left">
         <span id="stat-clock">00:00</span>
       </div>
       <div class="status-right">
-        <span>LoganOS</span>
-        <span>📶 100%</span>
+        <span id="os-tag">LoganOS</span>
+        <span id="stat-battery">📶 100%</span>
       </div>
     </div>
 
@@ -533,7 +559,7 @@
           <div class="term-stdout" id="term-out">LoganOS Sh (VFS Interactive Subsystem)
 Type 'help' to view available system commands.
 </div>
-          <div class="term-stdin-line">
+          <div class="term-stdin-line" id="term-input-container">
             <span class="term-prompt" id="term-pwd-prompt">/ $</span>
             <input type="text" class="term-input" id="term-in" spellcheck="false" autocomplete="off" />
           </div>
@@ -581,7 +607,7 @@ Type 'help' to view available system commands.
           <h4 style="margin-bottom: 8px; color: var(--accent);">Device Specifications</h4>
           <p>Kernel: <span id="prop-kernel" style="font-family: var(--font-code);">Loading...</span></p>
           <p>Build Tag: <span id="prop-build" style="font-family: var(--font-code);">Loading...</span></p>
-          <p>VFS Health: <span style="color: var(--accent-success);">Mounted (rw)</span></p>
+          <p>VFS Health: <span id="prop-vfs-health" style="color: var(--accent-success);">Mounted (rw)</span></p>
           <hr style="border: 0; border-top: 1px solid var(--border); margin: 12px 0;" />
           <h4 style="margin-bottom: 8px; color: var(--accent-danger);">Dangerous Zone</h4>
           <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
@@ -658,6 +684,11 @@ Type 'help' to view available system commands.
           background: "radial-gradient(circle at 50% 15%, #1e293b 0%, #0b0f17 100%)"
         })
       },
+      "/system/etc/fstab": {
+        type: "file",
+        mode: 0o644,
+        content: "/dev/block/boot / ext4 ro\n/dev/block/system /system ext4 rw\n/dev/block/userdata /sdcard ext4 rw"
+      },
       "/sdcard": { type: "dir", mode: 0o777 },
       "/sdcard/DCIM": { type: "dir", mode: 0o777 },
       "/sdcard/DCIM/camera_test.raw": { type: "file", mode: 0o666, content: "0x89 0x50 0x4E 0x47 [RAW_CAMERA_BUFFER]" },
@@ -665,12 +696,12 @@ Type 'help' to view available system commands.
       "/sdcard/Download/changelog.txt": {
         type: "file",
         mode: 0o666,
-        content: "LoganOS Changelog:\n- Root file browser enabled.\n- Added file viewer modal to Files app.\n- Added file/folder deletion buttons.\n- Live kernel panic watchdog active."
+        content: "LoganOS Changelog:\n- Dynamic degradation triggers enabled.\n- Deleting /system/etc/theme.json corrupts GPU output.\n- Deleting /system/etc/fstab causes display jitter.\n- Deleting /system/bin/sh bricks the terminal runtime."
       },
       "/sdcard/notes.txt": {
         type: "file",
         mode: 0o666,
-        content: "LoganOS Note:\nDo NOT delete /system files.\nThe watchdog will immediately trigger a kernel panic."
+        content: "Degradation Test List:\n1. Delete /system/etc/theme.json -> GPU corruption glitch\n2. Delete /system/etc/fstab -> Partition jitter glitch\n3. Delete /system/bin/sh -> Terminal binary crash\n4. Delete /system/bin/init -> Hard Kernel Panic"
       },
       "/dev": { type: "dir", mode: 0o755 },
       "/dev/null": { type: "file", mode: 0o666, content: "" },
@@ -680,7 +711,7 @@ Type 'help' to view available system commands.
     /* --- VFS ENGINE --- */
     class VirtualFileSystem {
       constructor() {
-        this.storageKey = "loganos_vfs_store_v3";
+        this.storageKey = "loganos_vfs_store_v4";
         this.fs = this.loadStorage();
       }
 
@@ -819,13 +850,14 @@ Type 'help' to view available system commands.
 
     const Proc = new ProcessManager();
 
-    /* --- KERNEL INTEGRITY --- */
+    /* --- KERNEL INTEGRITY & LIVE DEGRADATION ENGINE --- */
     const LoganKernel = {
       panicMode: false,
 
       verifyIntegrity() {
         if (this.panicMode) return;
 
+        // 1. FATAL CHECKS (Hard Crash Panic)
         if (!VFS.exists("/")) {
           this.panic("CRITICAL_VFS_FAULT: Root node missing.");
           return;
@@ -841,6 +873,42 @@ Type 'help' to view available system commands.
         if (!VFS.exists("/system/packages.xml")) {
           this.panic("PACKAGE_MGR_DEATH: /system/packages.xml missing.");
           return;
+        }
+
+        // 2. NON-FATAL SUB-SYSTEM DEGRADATIONS & GLITCHES
+        const shell = document.getElementById("hardware-shell");
+
+        // Subsystem Glitch 1: GPU Shader failure when theme.json is removed
+        if (!VFS.exists("/system/etc/theme.json")) {
+          shell.classList.add("glitch-gpu");
+          document.getElementById("os-tag").innerText = "[GPU_FAULT]";
+        } else {
+          shell.classList.remove("glitch-gpu");
+        }
+
+        // Subsystem Glitch 2: Display partition tearing when fstab is deleted
+        if (!VFS.exists("/system/etc/fstab")) {
+          shell.classList.add("glitch-fstab");
+        } else {
+          shell.classList.remove("glitch-fstab");
+        }
+
+        // Subsystem Glitch 3: Terminal Binary Missing
+        if (!VFS.exists("/system/bin/sh")) {
+          const out = document.getElementById("term-out");
+          out.innerText = "FATAL: /system/bin/sh: Exec format error or file not found.\nKernel refusing to spawn tty console.";
+          document.getElementById("term-input-container").style.display = "none";
+        } else {
+          document.getElementById("term-input-container").style.display = "flex";
+        }
+
+        // Subsystem Glitch 4: User Data Loss (/sdcard detached)
+        if (!VFS.exists("/sdcard")) {
+          document.getElementById("prop-vfs-health").innerText = "DEGRADED (sdcard I/O error)";
+          document.getElementById("prop-vfs-health").style.color = "var(--accent-warn)";
+        } else {
+          document.getElementById("prop-vfs-health").innerText = "Mounted (rw)";
+          document.getElementById("prop-vfs-health").style.color = "var(--accent-success)";
         }
       },
 
@@ -1060,6 +1128,11 @@ Type 'help' to view available system commands.
     /* --- WINDOW MANAGER --- */
     const WindowManager = {
       open(id) {
+        // SD Card missing check
+        if (!VFS.exists("/sdcard") && id !== "settings" && id !== "files") {
+          alert("[I/O Error]: /sdcard volume missing. App cache cannot be mounted.");
+        }
+
         document.getElementById(`win-${id}`).classList.add("active");
         if (id === "files") FileManagerUI.render();
         if (id === "tasks") TaskManagerUI.render();
@@ -1092,7 +1165,7 @@ Type 'help' to view available system commands.
 
       deleteItem(path, e) {
         e.stopPropagation();
-        if (confirm(`Delete ${path}? This might crash the OS.`)) {
+        if (confirm(`Delete ${path}? This could cause system instability.`)) {
           VFS.deleteNode(path);
           this.render();
           LoganKernel.verifyIntegrity();
@@ -1234,10 +1307,10 @@ Type 'help' to view available system commands.
 
       TermSession.init();
 
-      // Kernel Watchdog loop
+      // Kernel Watchdog & Degradation Loop
       setInterval(() => {
         LoganKernel.verifyIntegrity();
-      }, 1500);
+      }, 1000);
     }
 
     window.addEventListener("DOMContentLoaded", bootLoganOS);
