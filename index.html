@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>LoganOS - Degradation & Glitch Engine</title>
+  <title>LoganOS - Hardware Emulation Core</title>
   <style>
     :root {
       --bg: #090c10;
@@ -49,8 +49,7 @@
       transition: filter 0.3s ease;
     }
 
-    /* --- REALTIME GLITCH SHADERS & CORRUPTIONS --- */
-    /* Triggered when /system/etc/theme.json is deleted */
+    /* Subsystem Degradation Shaders */
     .glitch-gpu {
       animation: gpuArtifacts 0.18s infinite steps(2);
       filter: invert(0.9) hue-rotate(190deg) contrast(180%);
@@ -62,7 +61,6 @@
       100% { transform: translate(1px, 2px) skewX(0deg); }
     }
 
-    /* Triggered when /system/etc/fstab is deleted (storage tearing) */
     .glitch-fstab {
       animation: fstabShake 0.4s infinite alternate ease-in-out;
     }
@@ -74,7 +72,6 @@
       100% { clip-path: inset(0 0 0 0); transform: translateY(0); }
     }
 
-    /* Native-style Status Bar */
     .status-bar {
       height: 42px;
       padding: 0 20px;
@@ -95,7 +92,6 @@
       gap: 8px;
     }
 
-    /* Main Desktop Viewport */
     .viewport {
       flex: 1;
       position: relative;
@@ -134,7 +130,6 @@
       margin-top: 8px;
     }
 
-    /* Android Bottom Dock */
     .app-grid {
       display: flex;
       justify-content: space-around;
@@ -184,7 +179,6 @@
       text-align: center;
     }
 
-    /* Window Architecture */
     .app-window {
       position: absolute;
       top: 0;
@@ -377,7 +371,6 @@
       color: #fff;
     }
 
-    /* File Content Viewer Modal */
     .file-modal {
       position: absolute;
       inset: 0;
@@ -418,7 +411,7 @@
       -webkit-user-select: text;
     }
 
-    /* Task Manager Table */
+    /* Process Table */
     .proc-table {
       width: 100%;
       border-collapse: collapse;
@@ -436,7 +429,6 @@
       color: var(--accent);
     }
 
-    /* Gesture Indicator */
     .nav-gestures {
       height: 32px;
       display: flex;
@@ -459,7 +451,7 @@
       background: #8b949e;
     }
 
-    /* Kernel Crash / Panic View */
+    /* Kernel Panic Dump */
     .kernel-dump-view {
       position: absolute;
       inset: 0;
@@ -507,28 +499,27 @@
 <body>
 
   <div class="device-shell" id="hardware-shell">
-    <!-- Status Bar -->
     <div class="status-bar">
       <div class="status-left">
         <span id="stat-clock">00:00</span>
       </div>
       <div class="status-right">
         <span id="os-tag">LoganOS</span>
-        <span id="stat-battery">📶 100%</span>
+        <span id="stat-battery">RAM: 64MB</span>
       </div>
     </div>
 
     <!-- Kernel Panic View -->
     <div class="kernel-dump-view" id="kernel-crash-view">
-      <div class="dump-header">*** LOGAN-OS CRITICAL KERNEL PANIC ***</div>
+      <div class="dump-header">*** LOGAN-OS KERNEL HARD PANIC ***</div>
       <p id="panic-trace-summary">CRASH_REASON: KERNEL_INTEGRITY_VIOLATION</p>
       <p style="color: #bbb; margin-top: 6px;">[FAULT_TIME: <span id="crash-timestamp"></span>]</p>
       <hr style="border: 0; border-top: 1px dashed #551111; margin: 8px 0;" />
       <div id="panic-registers">
-        CPU: 0 PID: 1 Comm: init Not tainted 6.1.0-logan-vfs #1<br/>
-        Hardware: LoganOS Native Viewport Engine<br/>
-        RIP: 0010:vfs_mount_root+0x7b/0x120<br/>
-        RAX: 0000000000000000 RBX: ffff8881001a4000 RCX: 0000000000000000
+        CPU: LoganRISC-8 (Emulated) PID: 1 Comm: init<br/>
+        R0: 0x00 R1: 0x00 R2: 0x00 R3: 0x00 PC: 0x0004 ZF: 0<br/>
+        VFS Buffer: Uint8Array [67,108,86,70,83] status: CORRUPT<br/>
+        RIP: 0010:vfs_mount_root+0x7b/0x120
       </div>
       <div id="panic-custom-msg" style="margin-top: 10px; color: #ffaaaa;"></div>
       <div class="panic-btn-group">
@@ -537,7 +528,6 @@
       </div>
     </div>
 
-    <!-- Active Screen -->
     <div class="viewport" id="viewport">
       <div class="desktop-area">
         <div class="widget-clock">
@@ -545,26 +535,24 @@
           <div class="date" id="screen-date">Loading...</div>
         </div>
 
-        <!-- Launcher Bottom Dock -->
         <div class="app-grid" id="launcher-grid"></div>
       </div>
 
-      <!-- APP: TERMINAL -->
+      <!-- TERMINAL -->
       <div class="app-window" id="win-terminal">
         <div class="window-topbar">
           <div class="window-title"><span>💻</span> Terminal [LoganSh]</div>
           <button class="btn-close" onclick="WindowManager.close('terminal')">✕</button>
         </div>
         <div class="window-view term-container">
-          <div class="term-stdout" id="term-out">LoganOS Sh (VFS Interactive Subsystem)
-Type 'help' to view available system commands.
+          <div class="term-stdout" id="term-out">LoganOS Core (Uint8Array VFS & LoganRISC CPU)
+Type 'help' for commands. Try running binary: './counter.bin' in /system/bin!
 </div>
           <div class="term-stdin-line" id="term-input-container">
             <span class="term-prompt" id="term-pwd-prompt">/ $</span>
             <input type="text" class="term-input" id="term-in" spellcheck="false" autocomplete="off" />
           </div>
 
-          <!-- Nano Text Editor Inside Terminal -->
           <div class="nano-editor" id="nano-screen">
             <div class="nano-header">
               <span id="nano-filename">File: /sdcard/notes.txt</span>
@@ -579,7 +567,7 @@ Type 'help' to view available system commands.
         </div>
       </div>
 
-      <!-- APP: FILE MANAGER -->
+      <!-- FILE MANAGER -->
       <div class="app-window" id="win-files">
         <div class="window-topbar">
           <div class="window-title"><span>📁</span> <span id="vfs-nav-title">/</span></div>
@@ -587,7 +575,6 @@ Type 'help' to view available system commands.
         </div>
         <div class="window-view" id="filemgr-viewport"></div>
 
-        <!-- Modal Viewer for reading file content directly -->
         <div class="file-modal" id="file-viewer-modal">
           <div class="modal-header">
             <div class="window-title" id="viewer-filename"><span>📄</span> file.txt</div>
@@ -597,29 +584,27 @@ Type 'help' to view available system commands.
         </div>
       </div>
 
-      <!-- APP: SYSTEM SETTINGS -->
+      <!-- SETTINGS -->
       <div class="app-window" id="win-settings">
         <div class="window-topbar">
-          <div class="window-title"><span>⚙️</span> OS Settings</div>
+          <div class="window-title"><span>⚙️</span> OS Architecture</div>
           <button class="btn-close" onclick="WindowManager.close('settings')">✕</button>
         </div>
         <div class="window-view" style="font-size: 13px; line-height: 1.6;">
-          <h4 style="margin-bottom: 8px; color: var(--accent);">Device Specifications</h4>
-          <p>Kernel: <span id="prop-kernel" style="font-family: var(--font-code);">Loading...</span></p>
-          <p>Build Tag: <span id="prop-build" style="font-family: var(--font-code);">Loading...</span></p>
+          <h4 style="margin-bottom: 8px; color: var(--accent);">Hardware Architecture Specs</h4>
+          <p>CPU Core: <span style="font-family: var(--font-code); color: #fff;">LoganRISC 8-bit Virtual Execution Unit</span></p>
+          <p>VFS Engine: <span style="font-family: var(--font-code); color: #fff;">ArrayBuffer Binary Inode Table</span></p>
+          <p>Kernel Version: <span id="prop-kernel" style="font-family: var(--font-code);">Loading...</span></p>
           <p>VFS Health: <span id="prop-vfs-health" style="color: var(--accent-success);">Mounted (rw)</span></p>
           <hr style="border: 0; border-top: 1px solid var(--border); margin: 12px 0;" />
           <h4 style="margin-bottom: 8px; color: var(--accent-danger);">Dangerous Zone</h4>
-          <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px;">
-            Manually trigger a critical filesystem wipe to test kernel panic recovery.
-          </p>
           <button class="panic-btn" style="background: var(--accent-danger); border: none;" onclick="VFS.deleteNode('/system'); LoganKernel.verifyIntegrity();">
-            Delete /system Partition
+            Wipe /system Node
           </button>
         </div>
       </div>
 
-      <!-- APP: TASK MANAGER -->
+      <!-- TASK MANAGER -->
       <div class="app-window" id="win-tasks">
         <div class="window-topbar">
           <div class="window-title"><span>📊</span> Task Manager</div>
@@ -631,7 +616,7 @@ Type 'help' to view available system commands.
               <tr>
                 <th>PID</th>
                 <th>PROCESS</th>
-                <th>MEM</th>
+                <th>VIRT MEM</th>
                 <th>ACTION</th>
               </tr>
             </thead>
@@ -641,77 +626,155 @@ Type 'help' to view available system commands.
       </div>
     </div>
 
-    <!-- Gesture Bar -->
     <div class="nav-gestures">
       <div class="pill-home" onclick="WindowManager.minimizeAll()"></div>
     </div>
   </div>
 
   <script>
-    const DEFAULT_PACKAGES = [
-      { id: "files", name: "Files", icon: "📁" },
-      { id: "terminal", name: "Terminal", icon: "💻" },
-      { id: "settings", name: "Settings", icon: "⚙️" },
-      { id: "tasks", name: "Tasks", icon: "📊" }
-    ];
+    /**
+     * =========================================================================
+     * REAL LOGAN-RISC CPU VIRTUAL MACHINE (8-bit Architecture)
+     * Instruction Set:
+     * 0x01 MOV  Reg, Val    [0x01, RegIdx, Val]
+     * 0x02 ADD  Reg, Val    [0x02, RegIdx, Val]
+     * 0x03 SUB  Reg, Val    [0x03, RegIdx, Val]
+     * 0x04 OUT  Reg         [0x04, RegIdx] (Prints Register to Console)
+     * 0x05 HALT             [0x05]
+     * =========================================================================
+     */
+    class VirtualCPU {
+      constructor() {
+        this.R = new Uint8Array(4); // 4 General Purpose Registers (R0 - R3)
+        this.PC = 0;               // Program Counter
+        this.ZF = 0;               // Zero Flag
+        this.halted = false;
+      }
 
-    const FACTORY_IMAGE = {
+      reset() {
+        this.R.fill(0);
+        this.PC = 0;
+        this.ZF = 0;
+        this.halted = false;
+      }
+
+      execute(byteBuffer, stdoutCallback) {
+        this.reset();
+        const code = new Uint8Array(byteBuffer);
+        let cycles = 0;
+
+        stdoutCallback(`[CPU] Core online. Executing ${code.length} byte payload...\n`);
+
+        while (!this.halted && this.PC < code.length && cycles < 1000) {
+          cycles++;
+          const op = code[this.PC++];
+
+          switch (op) {
+            case 0x01: { // MOV Reg, Val
+              const reg = code[this.PC++];
+              const val = code[this.PC++];
+              this.R[reg] = val;
+              break;
+            }
+            case 0x02: { // ADD Reg, Val
+              const reg = code[this.PC++];
+              const val = code[this.PC++];
+              this.R[reg] += val;
+              break;
+            }
+            case 0x03: { // SUB Reg, Val
+              const reg = code[this.PC++];
+              const val = code[this.PC++];
+              this.R[reg] -= val;
+              this.ZF = this.R[reg] === 0 ? 1 : 0;
+              break;
+            }
+            case 0x04: { // OUT Reg
+              const reg = code[this.PC++];
+              stdoutCallback(`[CPU_OUT] R${reg} = 0x${this.R[reg].toString(16).padStart(2, '0')} (${this.R[reg]})\n`);
+              break;
+            }
+            case 0x05: // HALT
+              this.halted = true;
+              stdoutCallback(`[CPU] Program halted gracefully at cycle ${cycles}.\n`);
+              return;
+
+            default:
+              stdoutCallback(`[CPU_FAULT] Illegal Opcode: 0x${op ? op.toString(16) : '00'} at PC: ${this.PC - 1}\n`);
+              return;
+          }
+        }
+      }
+    }
+
+    const CPU = new VirtualCPU();
+
+    /* --- COMPILED DEMO BINARY PAYLOADS (RAW BYTES) --- */
+    // counter.bin: Sets R0=10, adds 15, subtracts 5, prints output, halts
+    const COUNTER_BIN = new Uint8Array([
+      0x01, 0x00, 0x0A, // MOV R0, 10
+      0x02, 0x00, 0x0F, // ADD R0, 15
+      0x03, 0x00, 0x05, // SUB R0, 5
+      0x04, 0x00,       // OUT R0 (should output 20)
+      0x05              // HALT
+    ]);
+
+    /**
+     * =========================================================================
+     * REAL BINARY ARRAYBUFFER VFS INODE ENGINE
+     * Files are backed by actual Uint8Array binary buffers instead of pure strings.
+     * =========================================================================
+     */
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
+
+    const FACTORY_VFS_PAYLOAD = {
       "/": { type: "dir", mode: 0o755 },
-      "/init.rc": {
-        type: "file",
-        mode: 0o644,
-        content: "loglevel 3\nexport PATH /system/bin\nmount_all /system/etc/fstab\nstart surfaceflinger\nstart logansh"
-      },
+      "/init.rc": { type: "file", mode: 0o644, bytes: Array.from(encoder.encode("loglevel 3\nexport PATH /system/bin\nmount_all\nstart logansh")) },
       "/system": { type: "dir", mode: 0o755 },
       "/system/bin": { type: "dir", mode: 0o755 },
-      "/system/bin/init": { type: "file", mode: 0o755, content: "[ELF 64-bit LSB executable, Logan Init Core]" },
-      "/system/bin/sh": { type: "file", mode: 0o755, content: "[ELF 64-bit LSB executable, Logan Shell Binary]" },
+      "/system/bin/init": { type: "file", mode: 0o755, bytes: Array.from(encoder.encode("[ELF 64-bit LSB executable, Logan Init Core]")) },
+      "/system/bin/sh": { type: "file", mode: 0o755, bytes: Array.from(encoder.encode("[ELF 64-bit LSB executable, Logan Shell Interpreter]")) },
+      "/system/bin/counter.bin": { type: "file", mode: 0o755, isBinary: true, bytes: Array.from(COUNTER_BIN) },
       "/system/build.prop": {
         type: "file",
         mode: 0o644,
-        content: "ro.product.brand=Logan\nro.product.model=LoganOS_Pro\nro.build.version.release=1.0.4-LTS\nro.sys.storage.encryption=none"
+        bytes: Array.from(encoder.encode("ro.product.brand=Logan\nro.product.model=LoganOS_RISC\nro.build.version.release=2.0.0-PRO\nro.sys.storage.engine=ArrayBuffer_VFS"))
       },
       "/system/packages.xml": {
         type: "file",
         mode: 0o644,
-        content: JSON.stringify(DEFAULT_PACKAGES)
+        bytes: Array.from(encoder.encode(JSON.stringify([
+          { id: "files", name: "Files", icon: "📁" },
+          { id: "terminal", name: "Terminal", icon: "💻" },
+          { id: "settings", name: "Settings", icon: "⚙️" },
+          { id: "tasks", name: "Tasks", icon: "📊" }
+        ])))
       },
       "/system/etc": { type: "dir", mode: 0o755 },
       "/system/etc/theme.json": {
         type: "file",
         mode: 0o644,
-        content: JSON.stringify({
-          background: "radial-gradient(circle at 50% 15%, #1e293b 0%, #0b0f17 100%)"
-        })
+        bytes: Array.from(encoder.encode(JSON.stringify({ background: "radial-gradient(circle at 50% 15%, #1e293b 0%, #0b0f17 100%)" })))
       },
       "/system/etc/fstab": {
         type: "file",
         mode: 0o644,
-        content: "/dev/block/boot / ext4 ro\n/dev/block/system /system ext4 rw\n/dev/block/userdata /sdcard ext4 rw"
+        bytes: Array.from(encoder.encode("/dev/block/vfs_ram / ext4 rw\n/dev/block/userdata /sdcard ext4 rw"))
       },
       "/sdcard": { type: "dir", mode: 0o777 },
-      "/sdcard/DCIM": { type: "dir", mode: 0o777 },
-      "/sdcard/DCIM/camera_test.raw": { type: "file", mode: 0o666, content: "0x89 0x50 0x4E 0x47 [RAW_CAMERA_BUFFER]" },
-      "/sdcard/Download": { type: "dir", mode: 0o777 },
-      "/sdcard/Download/changelog.txt": {
-        type: "file",
-        mode: 0o666,
-        content: "LoganOS Changelog:\n- Dynamic degradation triggers enabled.\n- Deleting /system/etc/theme.json corrupts GPU output.\n- Deleting /system/etc/fstab causes display jitter.\n- Deleting /system/bin/sh bricks the terminal runtime."
-      },
       "/sdcard/notes.txt": {
         type: "file",
         mode: 0o666,
-        content: "Degradation Test List:\n1. Delete /system/etc/theme.json -> GPU corruption glitch\n2. Delete /system/etc/fstab -> Partition jitter glitch\n3. Delete /system/bin/sh -> Terminal binary crash\n4. Delete /system/bin/init -> Hard Kernel Panic"
+        bytes: Array.from(encoder.encode("LoganOS v2.0:\n- CPU: LoganRISC 8-bit Virtual Core\n- Storage: ArrayBuffer binary VFS\nRun './counter.bin' in /system/bin to see CPU execution."))
       },
-      "/dev": { type: "dir", mode: 0o755 },
-      "/dev/null": { type: "file", mode: 0o666, content: "" },
-      "/dev/urandom": { type: "file", mode: 0o444, content: "[PSEUDORANDOM_STREAM]" }
+      "/sdcard/Download": { type: "dir", mode: 0o777 },
+      "/sdcard/Download/test.raw": { type: "file", mode: 0o666, isBinary: true, bytes: [0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE] }
     };
 
-    /* --- VFS ENGINE --- */
-    class VirtualFileSystem {
+    class BinaryFileSystem {
       constructor() {
-        this.storageKey = "loganos_vfs_store_v4";
+        this.storageKey = "loganos_vfs_binary_v5";
         this.fs = this.loadStorage();
       }
 
@@ -721,10 +784,10 @@ Type 'help' to view available system commands.
           try {
             return JSON.parse(local);
           } catch (e) {
-            console.error("VFS corrupt, restoring factory.");
+            console.error("VFS byte table corrupt, rewriting factory image.");
           }
         }
-        return JSON.parse(JSON.stringify(FACTORY_IMAGE));
+        return JSON.parse(JSON.stringify(FACTORY_VFS_PAYLOAD));
       }
 
       saveStorage() {
@@ -756,39 +819,38 @@ Type 'help' to view available system commands.
         return !!this.getNode(path);
       }
 
-      listDir(path) {
-        const normalized = this.normalize(path);
-        const dirNode = this.getNode(normalized);
-        if (!dirNode || dirNode.type !== "dir") return null;
-
-        const results = [];
-        const prefix = normalized === "/" ? "/" : normalized + "/";
-
-        for (const key in this.fs) {
-          if (key === normalized || key === "/") continue;
-          if (key.startsWith(prefix)) {
-            const remainder = key.slice(prefix.length);
-            if (!remainder.includes("/")) {
-              results.push({
-                name: remainder,
-                fullPath: key,
-                ...this.fs[key]
-              });
-            }
-          }
-        }
-        return results;
+      readText(path) {
+        const node = this.getNode(path);
+        if (!node || node.type !== "file") return null;
+        return decoder.decode(new Uint8Array(node.bytes));
       }
 
-      writeFile(path, content) {
+      readBytes(path) {
+        const node = this.getNode(path);
+        if (!node || node.type !== "file") return null;
+        return new Uint8Array(node.bytes);
+      }
+
+      writeFile(path, stringOrBytes) {
         const normalized = this.normalize(path);
         const parentPath = normalized.substring(0, normalized.lastIndexOf("/")) || "/";
         if (!this.exists(parentPath)) return { error: "Parent folder not found." };
 
+        let byteArray;
+        let isBin = false;
+
+        if (typeof stringOrBytes === "string") {
+          byteArray = Array.from(encoder.encode(stringOrBytes));
+        } else if (stringOrBytes instanceof Uint8Array || Array.isArray(stringOrBytes)) {
+          byteArray = Array.from(stringOrBytes);
+          isBin = true;
+        }
+
         this.fs[normalized] = {
           type: "file",
           mode: 0o644,
-          content: content
+          isBinary: isBin,
+          bytes: byteArray
         };
         this.saveStorage();
         return { success: true };
@@ -820,18 +882,42 @@ Type 'help' to view available system commands.
         this.saveStorage();
         return count > 0 ? { success: true } : { error: "Target not found." };
       }
+
+      listDir(path) {
+        const normalized = this.normalize(path);
+        const dirNode = this.getNode(normalized);
+        if (!dirNode || dirNode.type !== "dir") return null;
+
+        const results = [];
+        const prefix = normalized === "/" ? "/" : normalized + "/";
+
+        for (const key in this.fs) {
+          if (key === normalized || key === "/") continue;
+          if (key.startsWith(prefix)) {
+            const remainder = key.slice(prefix.length);
+            if (!remainder.includes("/")) {
+              results.push({
+                name: remainder,
+                fullPath: key,
+                ...this.fs[key]
+              });
+            }
+          }
+        }
+        return results;
+      }
     }
 
-    const VFS = new VirtualFileSystem();
+    const VFS = new BinaryFileSystem();
 
-    /* --- PROCESSES --- */
+    /* --- PROCESS SCHEDULER TABLE --- */
     class ProcessManager {
       constructor() {
         this.table = [
-          { pid: 1, name: "init", mem: "4.2 MB" },
-          { pid: 2, name: "kthreadd", mem: "0.0 MB" },
-          { pid: 74, name: "surfaceflinger", mem: "28.5 MB" },
-          { pid: 112, name: "logansh", mem: "6.1 MB" }
+          { pid: 1, name: "init", mem: "128 KB" },
+          { pid: 2, name: "kthreadd", mem: "0 KB" },
+          { pid: 45, name: "surfaceflinger", mem: "840 KB" },
+          { pid: 88, name: "logansh", mem: "256 KB" }
         ];
       }
 
@@ -841,7 +927,7 @@ Type 'help' to view available system commands.
 
       kill(pid) {
         if (pid === 1) {
-          LoganKernel.panic("FATAL: Attempted to kill init process (PID 1). System execution halted.");
+          LoganKernel.panic("FATAL: SIGKILL dispatched to init (PID 1). System halted.");
           return;
         }
         this.table = this.table.filter(p => p.pid !== pid);
@@ -850,35 +936,33 @@ Type 'help' to view available system commands.
 
     const Proc = new ProcessManager();
 
-    /* --- KERNEL INTEGRITY & LIVE DEGRADATION ENGINE --- */
+    /* --- KERNEL INTEGRITY WATCHDOG --- */
     const LoganKernel = {
       panicMode: false,
 
       verifyIntegrity() {
         if (this.panicMode) return;
 
-        // 1. FATAL CHECKS (Hard Crash Panic)
         if (!VFS.exists("/")) {
-          this.panic("CRITICAL_VFS_FAULT: Root node missing.");
+          this.panic("CRITICAL_VFS_FAULT: Root binary node vanished.");
           return;
         }
         if (!VFS.exists("/system/bin/init")) {
-          this.panic("INIT_CRASH: /system/bin/init missing. System halted.");
+          this.panic("INIT_CRASH: /system/bin/init binary unreadable.");
           return;
         }
         if (!VFS.exists("/system/build.prop")) {
-          this.panic("DEVICE_PROFILE_FAULT: /system/build.prop unreadable.");
+          this.panic("DEVICE_PROFILE_FAULT: /system/build.prop missing.");
           return;
         }
         if (!VFS.exists("/system/packages.xml")) {
-          this.panic("PACKAGE_MGR_DEATH: /system/packages.xml missing.");
+          this.panic("PACKAGE_MGR_DEATH: /system/packages.xml unreadable.");
           return;
         }
 
-        // 2. NON-FATAL SUB-SYSTEM DEGRADATIONS & GLITCHES
         const shell = document.getElementById("hardware-shell");
 
-        // Subsystem Glitch 1: GPU Shader failure when theme.json is removed
+        // Glitch 1: GPU Failure
         if (!VFS.exists("/system/etc/theme.json")) {
           shell.classList.add("glitch-gpu");
           document.getElementById("os-tag").innerText = "[GPU_FAULT]";
@@ -886,29 +970,19 @@ Type 'help' to view available system commands.
           shell.classList.remove("glitch-gpu");
         }
 
-        // Subsystem Glitch 2: Display partition tearing when fstab is deleted
+        // Glitch 2: Partition Desync
         if (!VFS.exists("/system/etc/fstab")) {
           shell.classList.add("glitch-fstab");
         } else {
           shell.classList.remove("glitch-fstab");
         }
 
-        // Subsystem Glitch 3: Terminal Binary Missing
+        // Glitch 3: Shell Interpreter dead
         if (!VFS.exists("/system/bin/sh")) {
-          const out = document.getElementById("term-out");
-          out.innerText = "FATAL: /system/bin/sh: Exec format error or file not found.\nKernel refusing to spawn tty console.";
+          document.getElementById("term-out").innerText = "FATAL: /system/bin/sh missing. Kernel refusing tty.";
           document.getElementById("term-input-container").style.display = "none";
         } else {
           document.getElementById("term-input-container").style.display = "flex";
-        }
-
-        // Subsystem Glitch 4: User Data Loss (/sdcard detached)
-        if (!VFS.exists("/sdcard")) {
-          document.getElementById("prop-vfs-health").innerText = "DEGRADED (sdcard I/O error)";
-          document.getElementById("prop-vfs-health").style.color = "var(--accent-warn)";
-        } else {
-          document.getElementById("prop-vfs-health").innerText = "Mounted (rw)";
-          document.getElementById("prop-vfs-health").style.color = "var(--accent-success)";
         }
       },
 
@@ -930,7 +1004,7 @@ Type 'help' to view available system commands.
       }
     };
 
-    /* --- TERMINAL SUBSYSTEM --- */
+    /* --- TERMINAL WITH EXECUTION ENGINE --- */
     const TermSession = {
       cwd: "/sdcard",
       activeNanoFile: null,
@@ -966,9 +1040,28 @@ Type 'help' to view available system commands.
         const cmd = tokens[0];
         const args = tokens.slice(1);
 
+        // Binary Execution Handler (e.g. ./counter.bin or /system/bin/counter.bin)
+        if (cmd.startsWith("./") || cmd.endsWith(".bin")) {
+          let binaryPath = cmd.startsWith("./") ? this.cwd + "/" + cmd.slice(2) : cmd;
+          if (!binaryPath.startsWith("/")) binaryPath = this.cwd + "/" + binaryPath;
+
+          const bytes = VFS.readBytes(binaryPath);
+          if (!bytes) {
+            this.print(`sh: exec: ${cmd}: binary not found`);
+          } else {
+            CPU.execute(bytes, (outStr) => this.print(outStr));
+          }
+          return;
+        }
+
         switch (cmd) {
           case "help":
-            this.print("Supported commands: ls, cd, pwd, cat, nano, touch, mkdir, rm -rf, ps, kill, df, reboot, clear");
+            this.print(
+              "LoganOS Commands:\n" +
+              "  ls, cd, pwd, cat, nano, touch, mkdir, rm -rf, ps, kill, reboot, clear\n" +
+              "Binary Execution:\n" +
+              "  ./<filename>.bin   (Executes binary in LoganRISC CPU Core)"
+            );
             break;
 
           case "clear":
@@ -1006,18 +1099,19 @@ Type 'help' to view available system commands.
           }
 
           case "cat": {
-            if (!args[0]) {
-              this.print("cat: missing operand");
-              break;
-            }
+            if (!args[0]) break;
             const path = args[0].startsWith("/") ? args[0] : this.cwd + "/" + args[0];
             const node = VFS.getNode(path);
             if (!node) {
-              this.print(`cat: ${args[0]}: No such file or directory`);
+              this.print(`cat: ${args[0]}: No such file`);
             } else if (node.type === "dir") {
               this.print(`cat: ${args[0]}: Is a directory`);
             } else {
-              this.print(node.content);
+              if (node.isBinary) {
+                this.print(`[HEX DUMP]: ` + Array.from(node.bytes).map(b => "0x" + b.toString(16).padStart(2, '0')).join(" "));
+              } else {
+                this.print(VFS.readText(path));
+              }
             }
             break;
           }
@@ -1081,13 +1175,7 @@ Type 'help' to view available system commands.
 
           case "kill": {
             Proc.kill(parseInt(args[0], 10));
-            this.print(`Kill signal dispatched.`);
-            break;
-          }
-
-          case "df": {
-            const approxBytes = JSON.stringify(VFS.fs).length;
-            this.print(`VFS Usage: ${(approxBytes / 1024).toFixed(1)} KB / 64 MB allocated.`);
+            this.print(`Signal SIGKILL dispatched.`);
             break;
           }
 
@@ -1106,7 +1194,7 @@ Type 'help' to view available system commands.
         this.activeNanoFile = normalized;
 
         document.getElementById("nano-filename").innerText = `File: ${normalized}`;
-        document.getElementById("nano-text-area").value = node && node.type === "file" ? node.content : "";
+        document.getElementById("nano-text-area").value = node && node.type === "file" ? VFS.readText(normalized) : "";
         document.getElementById("nano-screen").style.display = "flex";
       },
 
@@ -1114,7 +1202,7 @@ Type 'help' to view available system commands.
         if (!this.activeNanoFile) return;
         const val = document.getElementById("nano-text-area").value;
         VFS.writeFile(this.activeNanoFile, val);
-        this.print(`[nano] Saved changes to ${this.activeNanoFile}`);
+        this.print(`[nano] Wrote bytes to ${this.activeNanoFile}`);
         LoganKernel.verifyIntegrity();
         this.nanoExit();
       },
@@ -1128,11 +1216,6 @@ Type 'help' to view available system commands.
     /* --- WINDOW MANAGER --- */
     const WindowManager = {
       open(id) {
-        // SD Card missing check
-        if (!VFS.exists("/sdcard") && id !== "settings" && id !== "files") {
-          alert("[I/O Error]: /sdcard volume missing. App cache cannot be mounted.");
-        }
-
         document.getElementById(`win-${id}`).classList.add("active");
         if (id === "files") FileManagerUI.render();
         if (id === "tasks") TaskManagerUI.render();
@@ -1149,13 +1232,20 @@ Type 'help' to view available system commands.
       }
     };
 
-    /* --- FILE EXPLORER UI WITH ROOT ACCESS & VIEW/DELETE --- */
+    /* --- FILE EXPLORER UI --- */
     const FileManagerUI = {
       navPath: "/",
 
-      openViewer(path, content) {
+      openViewer(path) {
+        const node = VFS.getNode(path);
         document.getElementById("viewer-filename").innerText = path;
-        document.getElementById("viewer-text").innerText = content;
+
+        if (node.isBinary) {
+          const hex = Array.from(node.bytes).map(b => "0x" + b.toString(16).padStart(2, '0')).join(" ");
+          document.getElementById("viewer-text").innerText = `[BINARY FILE]:\n${hex}`;
+        } else {
+          document.getElementById("viewer-text").innerText = VFS.readText(path);
+        }
         document.getElementById("file-viewer-modal").classList.add("open");
       },
 
@@ -1165,7 +1255,7 @@ Type 'help' to view available system commands.
 
       deleteItem(path, e) {
         e.stopPropagation();
-        if (confirm(`Delete ${path}? This could cause system instability.`)) {
+        if (confirm(`Delete ${path}? This could corrupt OS modules.`)) {
           VFS.deleteNode(path);
           this.render();
           LoganKernel.verifyIntegrity();
@@ -1193,7 +1283,7 @@ Type 'help' to view available system commands.
 
         const entries = VFS.listDir(this.navPath);
         if (!entries || entries.length === 0) {
-          container.innerHTML += `<p style="padding: 16px; color: var(--text-muted); font-size: 13px;">Directory is empty or unmounted.</p>`;
+          container.innerHTML += `<p style="padding: 16px; color: var(--text-muted); font-size: 13px;">Directory is empty.</p>`;
           return;
         }
 
@@ -1204,11 +1294,11 @@ Type 'help' to view available system commands.
 
           row.innerHTML = `
             <div class="file-meta-name">
-              <span>${isDir ? "📁" : "📄"}</span>
+              <span>${isDir ? "📁" : (item.isBinary ? "⚙️" : "📄")}</span>
               <span>${item.name}</span>
             </div>
             <div class="file-actions">
-              <span class="file-meta-specs">${isDir ? "DIR" : (item.content ? item.content.length : 0) + " B"}</span>
+              <span class="file-meta-specs">${isDir ? "DIR" : (item.bytes ? item.bytes.length : 0) + " B"}</span>
               <button class="btn-trash" onclick="FileManagerUI.deleteItem('${item.fullPath}', event)">🗑️</button>
             </div>
           `;
@@ -1218,7 +1308,7 @@ Type 'help' to view available system commands.
               this.navPath = item.fullPath;
               this.render();
             } else {
-              this.openViewer(item.fullPath, item.content || "");
+              this.openViewer(item.fullPath);
             }
           };
 
@@ -1248,22 +1338,19 @@ Type 'help' to view available system commands.
     /* --- SETTINGS UI --- */
     const SettingsUI = {
       render() {
-        const buildProp = VFS.getNode("/system/build.prop");
-        if (buildProp && buildProp.content) {
-          const lines = buildProp.content.split("\n");
+        const buildProp = VFS.readText("/system/build.prop");
+        if (buildProp) {
+          const lines = buildProp.split("\n");
           lines.forEach(l => {
             if (l.startsWith("ro.build.version.release=")) {
               document.getElementById("prop-kernel").innerText = l.split("=")[1];
-            }
-            if (l.startsWith("ro.product.model=")) {
-              document.getElementById("prop-build").innerText = l.split("=")[1];
             }
           });
         }
       }
     };
 
-    /* --- SYSTEM INITIALIZATION --- */
+    /* --- OS BOOTSTRAP --- */
     function bootLoganOS() {
       const updateClocks = () => {
         const d = new Date();
@@ -1279,13 +1366,13 @@ Type 'help' to view available system commands.
       setInterval(updateClocks, 1000);
       updateClocks();
 
-      // Launcher App Grid
+      // Parse dynamic packages from binary VFS
       const launcherGrid = document.getElementById("launcher-grid");
       launcherGrid.innerHTML = "";
-      const pkgsNode = VFS.getNode("/system/packages.xml");
-      if (pkgsNode && pkgsNode.content) {
+      const pkgsText = VFS.readText("/system/packages.xml");
+      if (pkgsText) {
         try {
-          const pkgs = JSON.parse(pkgsNode.content);
+          const pkgs = JSON.parse(pkgsText);
           pkgs.forEach(app => {
             const tile = document.createElement("div");
             tile.className = "app-icon";
@@ -1297,17 +1384,17 @@ Type 'help' to view available system commands.
             launcherGrid.appendChild(tile);
           });
         } catch (e) {
-          LoganKernel.panic("SYSTEM_CORRUPTION: Unable to parse /system/packages.xml.");
+          LoganKernel.panic("SYSTEM_CORRUPTION: /system/packages.xml invalid JSON.");
           return;
         }
       } else {
-        LoganKernel.panic("FATAL: /system/packages.xml missing.");
+        LoganKernel.panic("FATAL: /system/packages.xml is missing.");
         return;
       }
 
       TermSession.init();
 
-      // Kernel Watchdog & Degradation Loop
+      // Kernel Watchdog loop
       setInterval(() => {
         LoganKernel.verifyIntegrity();
       }, 1000);
