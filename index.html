@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>LoganOS - Responsive Web Architecture</title>
+  <title>LoganOS - Mobile Environment</title>
   <style>
     :root {
       --bg: #090c10;
@@ -38,7 +38,6 @@
       overflow: hidden;
     }
 
-    /* Fluid Device Container - Expands natively */
     .device-shell {
       width: 100vw;
       height: 100dvh;
@@ -51,23 +50,23 @@
 
     /* Native-style Status Bar */
     .status-bar {
-      height: 36px;
-      padding: 0 16px;
+      height: 42px;
+      padding: 0 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text);
       z-index: 900;
       background: rgba(15, 20, 28, 0.4);
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(10px);
     }
 
     .status-left, .status-right {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
 
     /* Main Desktop Viewport */
@@ -77,10 +76,9 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      background: radial-gradient(circle at 50% 15%, #1f2937 0%, #0b0f17 100%);
+      background: radial-gradient(circle at 50% 15%, #1e293b 0%, #0b0f17 100%);
       background-size: cover;
       background-position: center;
-      transition: background 0.3s ease;
     }
 
     .desktop-area {
@@ -92,45 +90,51 @@
     }
 
     .widget-clock {
-      padding: 10px 0;
+      margin-top: 10px;
       cursor: default;
     }
 
     .widget-clock .time {
-      font-size: clamp(48px, 12vw, 68px);
-      font-weight: 200;
-      letter-spacing: -1.5px;
+      font-size: clamp(52px, 14vw, 76px);
+      font-weight: 300;
+      letter-spacing: -2px;
       line-height: 1;
     }
 
     .widget-clock .date {
-      font-size: 14px;
+      font-size: 15px;
       color: var(--accent);
       font-weight: 500;
       margin-top: 8px;
     }
 
-    /* Responsive Grid for Any Aspect Ratio */
+    /* Android Bottom Dock */
     .app-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
-      max-width: 480px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
       width: 100%;
-      margin: 0 auto 16px auto;
-      row-gap: 24px;
-      column-gap: 16px;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 14px 10px;
+      background: rgba(22, 27, 34, 0.55);
+      backdrop-filter: blur(16px);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      margin-bottom: 8px;
     }
 
     .app-icon {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       cursor: pointer;
     }
 
     .app-icon:active .icon-tile {
-      transform: scale(0.9);
+      transform: scale(0.88);
     }
 
     .icon-tile {
@@ -140,10 +144,10 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 26px;
+      font-size: 28px;
       background: var(--surface);
       border: 1px solid var(--border);
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
     }
 
@@ -152,10 +156,6 @@
       color: var(--text);
       font-weight: 500;
       text-align: center;
-      width: 100%;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
     /* Window Architecture */
@@ -178,30 +178,31 @@
     }
 
     .window-topbar {
-      height: 48px;
+      height: 52px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
+      padding: 0 18px;
       background: var(--surface);
     }
 
     .window-title {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .btn-close {
       background: var(--surface-light);
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
     }
 
@@ -225,7 +226,7 @@
       display: flex;
       flex-direction: column;
       height: 100%;
-      font-size: 12px;
+      font-size: 13px;
       line-height: 1.45;
       user-select: text;
       -webkit-user-select: text;
@@ -242,9 +243,9 @@
     .term-stdin-line {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       border-top: 1px solid var(--border);
-      padding-top: 8px;
+      padding-top: 10px;
     }
 
     .term-prompt {
@@ -259,7 +260,7 @@
       outline: none;
       font-family: var(--font-code);
       color: #fff;
-      font-size: 13px;
+      font-size: 14px;
     }
 
     /* Nano Editor */
@@ -274,8 +275,8 @@
 
     .nano-header {
       background: var(--surface-light);
-      padding: 6px 12px;
-      font-size: 11px;
+      padding: 8px 14px;
+      font-size: 12px;
       font-family: var(--font-code);
       color: var(--text);
       display: flex;
@@ -291,21 +292,23 @@
       font-family: var(--font-code);
       border: none;
       outline: none;
-      padding: 12px;
+      padding: 14px;
       resize: none;
-      font-size: 13px;
+      font-size: 14px;
       user-select: text;
       -webkit-user-select: text;
     }
 
-    /* File Explorer Item */
+    /* File Explorer Item with Delete Action */
     .file-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px;
-      border-radius: 8px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      margin-bottom: 8px;
       cursor: pointer;
     }
 
@@ -317,26 +320,89 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      font-size: 13px;
+      font-size: 14px;
+      flex: 1;
+    }
+
+    .file-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .file-meta-specs {
-      font-size: 10px;
+      font-size: 11px;
       color: var(--text-muted);
       font-family: var(--font-code);
+    }
+
+    .btn-trash {
+      background: rgba(248, 81, 73, 0.15);
+      border: 1px solid rgba(248, 81, 73, 0.3);
+      color: var(--accent-danger);
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-trash:active {
+      background: var(--accent-danger);
+      color: #fff;
+    }
+
+    /* File Content Viewer Modal */
+    .file-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(9, 12, 16, 0.95);
+      backdrop-filter: blur(14px);
+      z-index: 700;
+      display: none;
+      flex-direction: column;
+      padding: 16px;
+    }
+
+    .file-modal.open {
+      display: flex;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-content-box {
+      flex: 1;
+      margin-top: 14px;
+      background: #040608;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      font-family: var(--font-code);
+      font-size: 13px;
+      color: #f0f6fc;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      user-select: text;
+      -webkit-user-select: text;
     }
 
     /* Task Manager Table */
     .proc-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 11px;
+      font-size: 12px;
       font-family: var(--font-code);
       text-align: left;
     }
 
     .proc-table th, .proc-table td {
-      padding: 8px;
+      padding: 10px 8px;
       border-bottom: 1px solid var(--border);
     }
 
@@ -344,19 +410,19 @@
       color: var(--accent);
     }
 
-    /* Android Home Pill Indicator */
+    /* Gesture Indicator */
     .nav-gestures {
-      height: 28px;
+      height: 32px;
       display: flex;
       justify-content: center;
       align-items: center;
       background: transparent;
       z-index: 900;
-      padding-bottom: env(safe-area-inset-bottom, 4px);
+      padding-bottom: env(safe-area-inset-bottom, 6px);
     }
 
     .pill-home {
-      width: 120px;
+      width: 130px;
       height: 5px;
       background: #484f58;
       border-radius: 99px;
@@ -367,7 +433,7 @@
       background: #8b949e;
     }
 
-    /* Kernel Panic Display Layer */
+    /* Kernel Crash / Panic View */
     .kernel-dump-view {
       position: absolute;
       inset: 0;
@@ -386,16 +452,16 @@
     }
 
     .dump-header {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: bold;
       color: #fff;
       background: #7a1212;
-      padding: 6px;
-      margin-bottom: 10px;
+      padding: 8px;
+      margin-bottom: 12px;
     }
 
     .panic-btn-group {
-      margin-top: 16px;
+      margin-top: 18px;
       display: flex;
       gap: 12px;
     }
@@ -408,7 +474,7 @@
       border-radius: 6px;
       cursor: pointer;
       font-family: var(--font-code);
-      font-size: 11px;
+      font-size: 12px;
     }
   </style>
 </head>
@@ -453,7 +519,7 @@
           <div class="date" id="screen-date">Loading...</div>
         </div>
 
-        <!-- Dynamic Launcher App Grid -->
+        <!-- Launcher Bottom Dock -->
         <div class="app-grid" id="launcher-grid"></div>
       </div>
 
@@ -494,6 +560,15 @@ Type 'help' to view available system commands.
           <button class="btn-close" onclick="WindowManager.close('files')">✕</button>
         </div>
         <div class="window-view" id="filemgr-viewport"></div>
+
+        <!-- Modal Viewer for reading file content directly -->
+        <div class="file-modal" id="file-viewer-modal">
+          <div class="modal-header">
+            <div class="window-title" id="viewer-filename"><span>📄</span> file.txt</div>
+            <button class="btn-close" onclick="FileManagerUI.closeViewer()">Close</button>
+          </div>
+          <div class="modal-content-box" id="viewer-text"></div>
+        </div>
       </div>
 
       <!-- APP: SYSTEM SETTINGS -->
@@ -547,7 +622,6 @@ Type 'help' to view available system commands.
   </div>
 
   <script>
-    // Clean Factory Image JSON
     const DEFAULT_PACKAGES = [
       { id: "files", name: "Files", icon: "📁" },
       { id: "terminal", name: "Terminal", icon: "💻" },
@@ -581,7 +655,7 @@ Type 'help' to view available system commands.
         type: "file",
         mode: 0o644,
         content: JSON.stringify({
-          background: "radial-gradient(circle at 50% 15%, #1f2937 0%, #0b0f17 100%)"
+          background: "radial-gradient(circle at 50% 15%, #1e293b 0%, #0b0f17 100%)"
         })
       },
       "/sdcard": { type: "dir", mode: 0o777 },
@@ -591,12 +665,12 @@ Type 'help' to view available system commands.
       "/sdcard/Download/changelog.txt": {
         type: "file",
         mode: 0o666,
-        content: "LoganOS Changelog:\n- Dynamic screen adaptation.\n- Fixed launcher package parsing.\n- Restored responsive gestures."
+        content: "LoganOS Changelog:\n- Added file viewer modal to Files app.\n- Added file/folder deletion buttons.\n- Added live kernel panic triggers for deletion."
       },
       "/sdcard/notes.txt": {
         type: "file",
         mode: 0o666,
-        content: "LoganOS Note:\nDo NOT run 'rm -rf /system' in terminal.\nThe kernel will panic."
+        content: "LoganOS Note:\nDo NOT delete /system files.\nThe watchdog will immediately trigger a kernel panic."
       },
       "/dev": { type: "dir", mode: 0o755 },
       "/dev/null": { type: "file", mode: 0o666, content: "" },
@@ -825,10 +899,7 @@ Type 'help' to view available system commands.
 
         switch (cmd) {
           case "help":
-            this.print(
-              "Supported commands:\n" +
-              "  ls, cd, pwd, cat, nano, touch, mkdir, rm -rf, ps, kill, df, reboot, clear"
-            );
+            this.print("Supported commands: ls, cd, pwd, cat, nano, touch, mkdir, rm -rf, ps, kill, df, reboot, clear");
             break;
 
           case "clear":
@@ -1000,12 +1071,32 @@ Type 'help' to view available system commands.
 
       minimizeAll() {
         document.querySelectorAll(".app-window").forEach(w => w.classList.remove("active"));
+        FileManagerUI.closeViewer();
       }
     };
 
-    /* --- FILE EXPLORER UI --- */
+    /* --- FILE EXPLORER UI WITH VIEW & DELETE --- */
     const FileManagerUI = {
       navPath: "/sdcard",
+
+      openViewer(path, content) {
+        document.getElementById("viewer-filename").innerText = path;
+        document.getElementById("viewer-text").innerText = content;
+        document.getElementById("file-viewer-modal").classList.add("open");
+      },
+
+      closeViewer() {
+        document.getElementById("file-viewer-modal").classList.remove("open");
+      },
+
+      deleteItem(path, e) {
+        e.stopPropagation();
+        if (confirm(`Delete ${path}?`)) {
+          VFS.deleteNode(path);
+          this.render();
+          LoganKernel.verifyIntegrity();
+        }
+      },
 
       render() {
         const container = document.getElementById("filemgr-viewport");
@@ -1015,7 +1106,7 @@ Type 'help' to view available system commands.
         if (this.navPath !== "/") {
           const upRow = document.createElement("div");
           upRow.className = "file-row";
-          upRow.innerHTML = `<div class="file-meta-name"><span>📁</span> <strong>.. (Up)</strong></div>`;
+          upRow.innerHTML = `<div class="file-meta-name"><span>📁</span> <strong>.. (Go Up)</strong></div>`;
           upRow.onclick = () => {
             const parts = this.navPath.split("/").filter(Boolean);
             parts.pop();
@@ -1027,7 +1118,7 @@ Type 'help' to view available system commands.
 
         const entries = VFS.listDir(this.navPath);
         if (!entries || entries.length === 0) {
-          container.innerHTML += `<p style="padding: 12px; color: var(--text-muted); font-size: 12px;">Directory is empty.</p>`;
+          container.innerHTML += `<p style="padding: 16px; color: var(--text-muted); font-size: 13px;">Directory is empty.</p>`;
           return;
         }
 
@@ -1035,12 +1126,16 @@ Type 'help' to view available system commands.
           const row = document.createElement("div");
           row.className = "file-row";
           const isDir = item.type === "dir";
+
           row.innerHTML = `
             <div class="file-meta-name">
               <span>${isDir ? "📁" : "📄"}</span>
               <span>${item.name}</span>
             </div>
-            <div class="file-meta-specs">${isDir ? "DIR" : (item.content.length + " B")}</div>
+            <div class="file-actions">
+              <span class="file-meta-specs">${isDir ? "DIR" : (item.content.length + " B")}</span>
+              <button class="btn-trash" onclick="FileManagerUI.deleteItem('${item.fullPath}', event)">🗑️</button>
+            </div>
           `;
 
           row.onclick = () => {
@@ -1048,10 +1143,10 @@ Type 'help' to view available system commands.
               this.navPath = item.fullPath;
               this.render();
             } else {
-              WindowManager.open("terminal");
-              TermSession.openNano(item.fullPath);
+              this.openViewer(item.fullPath, item.content);
             }
           };
+
           container.appendChild(row);
         });
       }
@@ -1095,14 +1190,6 @@ Type 'help' to view available system commands.
 
     /* --- SYSTEM INITIALIZATION --- */
     function bootLoganOS() {
-      // Clear legacy storage cache to apply fresh fixes
-      if (!localStorage.getItem("loganos_vfs_v2_init")) {
-        localStorage.removeItem("loganos_vfs_store");
-        localStorage.setItem("loganos_vfs_v2_init", "true");
-        location.reload();
-        return;
-      }
-
       const updateClocks = () => {
         const d = new Date();
         const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -1117,7 +1204,7 @@ Type 'help' to view available system commands.
       setInterval(updateClocks, 1000);
       updateClocks();
 
-      // Render Dynamic Launcher Grid
+      // Launcher App Grid
       const launcherGrid = document.getElementById("launcher-grid");
       launcherGrid.innerHTML = "";
       const pkgsNode = VFS.getNode("/system/packages.xml");
@@ -1145,7 +1232,7 @@ Type 'help' to view available system commands.
 
       TermSession.init();
 
-      // Background Kernel Watchdog
+      // Kernel Watchdog loop
       setInterval(() => {
         LoganKernel.verifyIntegrity();
       }, 1500);
